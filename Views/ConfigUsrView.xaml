@@ -1,0 +1,61 @@
+﻿<UserControl x:Class="SmiWifiProvisioning.Views.ConfigUsrView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Baris 1: Toolbar COM Port & Debug Checkbox -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Text="COM Port" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="Bold"/>
+            <ComboBox ItemsSource="{Binding AvailablePorts}" 
+                      SelectedItem="{Binding SelectedPort}" 
+                      Width="120" IsEnabled="{Binding IsNotBusy}"/>
+            <Button Content="Refresh" Command="{Binding RefreshPortsCommand}" 
+                    IsEnabled="{Binding IsNotBusy}" Margin="8,0,20,0" Padding="10,3"/>
+
+            <CheckBox Content="Debug Log" IsChecked="{Binding IsDebugLogEnabled}" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Baris 2: Formulir Wi-Fi -->
+        <GroupBox Grid.Row="1" Header="Pengaturan Wi-Fi Modul USR" Padding="10" Margin="0,0,0,10">
+            <StackPanel>
+                <Button Content="Scan WiFi" Command="{Binding ScanWifiCommand}" 
+                        IsEnabled="{Binding IsNotBusy}" Height="32" Margin="0,0,0,10" FontWeight="Bold"/>
+
+                <TextBlock Text="SSID" FontWeight="Bold" Margin="0,0,0,2"/>
+                <TextBox Text="{Binding Ssid, UpdateSourceTrigger=PropertyChanged}" 
+                         IsEnabled="{Binding IsNotBusy}" Margin="0,0,0,8" Padding="4"/>
+
+                <TextBlock Text="Password" FontWeight="Bold" Margin="0,0,0,2"/>
+                <TextBox Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}" 
+                         IsEnabled="{Binding IsNotBusy}" Margin="0,0,0,10" Padding="4"/>
+
+                <UniformGrid Columns="2">
+                    <Button Content="Connect WiFi" Command="{Binding ConnectWifiCommand}" 
+                            IsEnabled="{Binding IsNotBusy}" Height="32" Margin="0,0,4,0"/>
+                    <Button Content="Check DHCP" Command="{Binding CheckDhcpCommand}" 
+                            IsEnabled="{Binding IsNotBusy}" Height="32" Margin="4,0,0,0"/>
+                </UniformGrid>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- Baris 3: Status Indicator -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,6">
+            <TextBlock Text="Status: " FontWeight="Bold" FontSize="13"/>
+            <TextBlock Text="{Binding StatusMessage}" Foreground="Blue" FontWeight="Bold" FontSize="13"/>
+        </StackPanel>
+
+        <!-- Baris 4: Debug Log Terminal -->
+        <TextBox Grid.Row="3" 
+                 Text="{Binding LogText, Mode=OneWay}" 
+                 Background="#111111" Foreground="#00FF00" 
+                 FontFamily="Consolas" FontSize="11"
+                 TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" 
+                 IsReadOnly="True" x:Name="TxtLogUsr"/>
+    </Grid>
+</UserControl>

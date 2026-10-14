@@ -1,0 +1,105 @@
+﻿<UserControl x:Class="SmiWifiProvisioning.Views.ConfigProduksiView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Loaded="UserControl_Loaded">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- COM Port -->
+            <RowDefinition Height="Auto"/> <!-- Parameter Manual (Expander) -->
+            <RowDefinition Height="Auto"/> <!-- Barcode Input -->
+            <RowDefinition Height="Auto"/> <!-- Status Panel -->
+            <RowDefinition Height="*"/>    <!-- Log Terminal -->
+        </Grid.RowDefinitions>
+
+        <!-- Baris 0: COM Port -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Text="COM Port" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="Bold"/>
+            <ComboBox ItemsSource="{Binding AvailablePorts}"
+                      SelectedItem="{Binding SelectedPort}"
+                      Width="120"
+                      IsEnabled="{Binding IsNotBusy}"/>
+            <Button Content="Refresh"
+                    Command="{Binding RefreshPortsCommand}"
+                    IsEnabled="{Binding IsNotBusy}"
+                    Margin="10,0,0,0" Padding="10,3"/>
+        </StackPanel>
+
+        <!-- Baris 1: EXPANDER PARAMETER KONFIGURASI MANUAL -->
+        <Expander Grid.Row="1" Header="⚙️ Parameter Konfigurasi Manual" 
+          IsExpanded="False" Margin="0,0,0,10" Padding="8"
+          Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1">
+            <Grid IsEnabled="{Binding IsNotBusy}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="20"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Row 0: Device Type Selection -->
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Tipe Modul USR:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,4"/>
+                <ComboBox Grid.Row="0" Grid.Column="1" 
+                  ItemsSource="{Binding DeviceTypeOptions}" 
+                  SelectedItem="{Binding SelectedDeviceType}" 
+                  FontWeight="Bold" Foreground="#2563EB" Margin="0,4"/>
+
+                <!-- Row 1 -->
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="AP Password:" VerticalAlignment="Center" Margin="0,4"/>
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding ApPassword, UpdateSourceTrigger=PropertyChanged}" Margin="0,4"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="3" Text="Target Baud:" VerticalAlignment="Center" Margin="0,4"/>
+                <ComboBox Grid.Row="1" Grid.Column="4" ItemsSource="{Binding StandardBaudRates}" SelectedItem="{Binding TargetBaudRate}" Margin="0,4"/>
+
+                <!-- Row 2 -->
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Server Port:" VerticalAlignment="Center" Margin="0,4"/>
+                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding ServerPort, UpdateSourceTrigger=PropertyChanged}" Margin="0,4"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="3" Text="Data / Stop Bits:" VerticalAlignment="Center" Margin="0,4"/>
+                <StackPanel Grid.Row="2" Grid.Column="4" Orientation="Horizontal">
+                    <TextBox Text="{Binding DataBits}" Width="40" Margin="0,4,5,4"/>
+                    <ComboBox ItemsSource="{Binding StopBitsOptions}" SelectedItem="{Binding StopBits}" Width="60" Margin="0,4"/>
+                </StackPanel>
+
+                <!-- Row 3 -->
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Web Password:" VerticalAlignment="Center" Margin="0,4"/>
+                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding WebPassword, UpdateSourceTrigger=PropertyChanged}" Margin="0,4"/>
+
+                <TextBlock Grid.Row="3" Grid.Column="3" Text="Parity:" VerticalAlignment="Center" Margin="0,4"/>
+                <ComboBox Grid.Row="3" Grid.Column="4" ItemsSource="{Binding ParityOptions}" SelectedItem="{Binding Parity}" Margin="0,4"/>
+            </Grid>
+        </Expander>
+
+        <!-- Baris 2: Barcode input -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,10">
+            <TextBlock Text="Scan Barcode Meter" FontSize="12" FontWeight="Bold" Margin="0,0,0,4"/>
+            <TextBox x:Name="TxtMeterId"
+                     Text="{Binding MeterId, UpdateSourceTrigger=PropertyChanged}"
+                     FontSize="18" FontFamily="Consolas" Padding="6" Height="36"
+                     VerticalContentAlignment="Center" IsEnabled="{Binding IsNotBusy}">
+                <TextBox.InputBindings>
+                    <KeyBinding Key="Enter" Command="{Binding StartProvisioningCommand}"/>
+                </TextBox.InputBindings>
+                </TextBox>
+        </StackPanel>
+
+        <!-- Baris 3: Status Panel -->
+        <Border Grid.Row="3" Background="{Binding StatusColor}" CornerRadius="4" Padding="14,10" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding StatusText}" FontWeight="Bold" FontSize="15" Foreground="White" Margin="0,0,14,0" VerticalAlignment="Center" MinWidth="90"/>
+                <TextBlock Text="{Binding StatusMessage}" FontSize="13" Foreground="White" VerticalAlignment="Center" TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Baris 4: Log -->
+        <TextBox Grid.Row="4" x:Name="TxtLog" Text="{Binding LogText, Mode=OneWay}"
+                 Background="#111111" Foreground="#00FF00" FontFamily="Consolas" FontSize="11"
+                 TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" IsReadOnly="True" TextChanged="TxtLog_TextChanged"/>
+    </Grid>
+</UserControl>

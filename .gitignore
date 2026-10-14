@@ -399,3 +399,17 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+PublishOutput/SmiWifiProvisioning.exe
+smi_USR_Fixxx_FIXXX.rar
+smi_USR_Fixxx_FIXXX/SmiWifiProvisioning.exe
+PublishOutput/D3DCompiler_47_cor3.dll
+PublishOutput/PenImc_cor3.dll
+PublishOutput/PresentationNative_cor3.dll
+PublishOutput/vcruntime140_cor3.dll
+PublishOutput/wpfgfx_cor3.dll
+smi_USR_Fixxx_FIXXX/D3DCompiler_47_cor3.dll
+smi_USR_Fixxx_FIXXX/e_sqlite3.dll
+smi_USR_Fixxx_FIXXX/PenImc_cor3.dll
+smi_USR_Fixxx_FIXXX/PresentationNative_cor3.dll
+smi_USR_Fixxx_FIXXX/vcruntime140_cor3.dll
+smi_USR_Fixxx_FIXXX/wpfgfx_cor3.dll

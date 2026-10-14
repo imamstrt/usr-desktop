@@ -1,0 +1,870 @@
+﻿<UserControl x:Class="SmiWifiProvisioning.Views.ConfigAdminView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
+
+        <!-- ============ STYLES ============ -->
+        <Style x:Key="ParamTitle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#212121"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="ParamAtCmd" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="Foreground" Value="#1976D2"/>
+            <Setter Property="Margin" Value="0,2,0,0"/>
+        </Style>
+
+        <Style x:Key="ParamInput" TargetType="TextBox">
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="Padding" Value="6,2"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+        <Style x:Key="ParamCombo" TargetType="ComboBox">
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="6,0"/>
+        </Style>
+
+        <Style x:Key="ActionButton" TargetType="Button">
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="Padding" Value="6,0"/>
+            <Setter Property="Margin" Value="3,0"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+        <Style x:Key="RespBox" TargetType="TextBox">
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="Background" Value="#F5F7FA"/>
+            <Setter Property="BorderBrush" Value="#E1E5EA"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#1B5E20"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="6,2"/>
+            <Setter Property="Height" Value="26"/>
+        </Style>
+
+        <Style x:Key="ParamRow" TargetType="Border">
+            <Setter Property="Padding" Value="10,7"/>
+            <Setter Property="Margin" Value="0,3"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#EAEAEA"/>
+        </Style>
+
+        <Style x:Key="RowLabel" TargetType="StackPanel">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="180"/>
+        </Grid.RowDefinitions>
+
+        <!-- ============ BARIS 0: TOOLBAR ============ -->
+        <Border Grid.Row="0" Background="#F5F7FA" BorderBrush="#E1E5EA" BorderThickness="1"
+                CornerRadius="4" Padding="10,8" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="COM Port" VerticalAlignment="Center" Margin="0,0,8,0" FontWeight="SemiBold"/>
+                <ComboBox ItemsSource="{Binding AvailablePorts}" SelectedItem="{Binding SelectedPort}"
+                          Width="120" Height="26" VerticalContentAlignment="Center"
+                          IsEnabled="{Binding IsNotBusy}"/>
+                <Button Content="Refresh" Command="{Binding RefreshPortsCommand}"
+                        IsEnabled="{Binding IsNotBusy}" Height="26" Padding="10,0" Margin="6,0,16,0"/>
+
+                <Button Content="🔍 Baca Semua Parameter" Command="{Binding ReadAllConfigsCommand}"
+                        IsEnabled="{Binding IsNotBusy}" Height="26" Padding="12,0"
+                        Background="#E1F5FE" Foreground="#0277BD" FontWeight="Bold"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ============ BARIS 1: FORM PARAMETER ============ -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Margin="0,0,0,8">
+            <StackPanel Margin="0,0,10,0" MinWidth="1120">
+
+                <!-- ===== PANEL 1: MANUAL AT ===== -->
+                <GroupBox Header="1. Manual AT Command Tester" Foreground="DarkBlue"
+                          Margin="0,0,0,10" Padding="8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="76"/>
+                            <ColumnDefinition Width="240"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Style="{StaticResource ParamInput}"
+                                 Text="{Binding ManualCmd, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding IsNotBusy}"/>
+                        <Button Grid.Column="1" Content="Kirim" Style="{StaticResource ActionButton}"
+                                Command="{Binding SendManualCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                        <TextBox Grid.Column="2" Style="{StaticResource RespBox}"
+                                 Text="{Binding ManualResp}"
+                                 ToolTip="{Binding ManualResp}"/>
+                    </Grid>
+                </GroupBox>
+
+                <!-- ===== PANEL 2: SOCKET A & UTAMA ===== -->
+                <GroupBox Header="2. Konfigurasi Parameter Utama (Socket A &amp; System)"
+                          Padding="8" Margin="0,0,0,10">
+                    <StackPanel>
+
+                        <!-- mode usr (AT+WMODE) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#FFFFFF">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="mode usr" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+WMODE" Style="{StaticResource ParamAtCmd}"/>
+                                </StackPanel>
+                                <ComboBox Grid.Column="1" Style="{StaticResource ParamCombo}"
+                                          ItemsSource="{Binding WmodeOptions}" SelectedItem="{Binding SelectedWmode}"
+                                          Width="150" HorizontalAlignment="Left" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadWmodeCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="Kirim" Style="{StaticResource ActionButton}"
+                                        Command="{Binding SendWmodeCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding WmodeResp}" ToolTip="{Binding WmodeResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- AP parameter (AT+WAP) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#F7F9FB">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="AP parameter" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+WAP" Style="{StaticResource ParamAtCmd}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <ComboBox Style="{StaticResource ParamCombo}" ItemsSource="{Binding WapModeOptions}"
+                                              SelectedItem="{Binding SelectedWapMode}" Width="80" IsEnabled="{Binding IsNotBusy}"/>
+                                    <TextBox Style="{StaticResource ParamInput}" Text="{Binding WapSsid}"
+                                             Width="150" Margin="6,0" IsEnabled="{Binding IsNotBusy}"/>
+                                    <ComboBox Style="{StaticResource ParamCombo}" ItemsSource="{Binding WapChannelOptions}"
+                                              SelectedItem="{Binding SelectedWapChannel}" Width="80" IsEnabled="{Binding IsNotBusy}"/>
+                                </StackPanel>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadWapCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="Kirim" Style="{StaticResource ActionButton}"
+                                        Command="{Binding SendWapCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding WapResp}" ToolTip="{Binding WapResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- password AP (AT+WAKEY) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#FFFFFF">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="password AP" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+WAKEY" Style="{StaticResource ParamAtCmd}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <ComboBox Style="{StaticResource ParamCombo}" ItemsSource="{Binding WakeyAuthOptions}"
+                                              SelectedItem="{Binding SelectedWakeyAuth}" Width="100" IsEnabled="{Binding IsNotBusy}"/>
+                                    <ComboBox Style="{StaticResource ParamCombo}" ItemsSource="{Binding WakeyEncOptions}"
+                                              SelectedItem="{Binding SelectedWakeyEnc}" Width="80" Margin="6,0" IsEnabled="{Binding IsNotBusy}"/>
+                                    <TextBox Style="{StaticResource ParamInput}" Text="{Binding WakeyPass}"
+                                             Width="150" IsEnabled="{Binding IsNotBusy}"/>
+                                </StackPanel>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadWakeyCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="Kirim" Style="{StaticResource ActionButton}"
+                                        Command="{Binding SendWakeyCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding WakeyResp}" ToolTip="{Binding WakeyResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Socket A TCP protokol (AT+NETP) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#F7F9FB">
+                            <StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="200"/>
+                                        <ColumnDefinition Width="420"/>
+                                        <ColumnDefinition Width="76"/>
+                                        <ColumnDefinition Width="76"/>
+                                        <ColumnDefinition Width="*" MinWidth="240"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Style="{StaticResource RowLabel}">
+                                        <TextBlock Text="Socket A protokol" Style="{StaticResource ParamTitle}"/>
+                                        <TextBlock Text="AT+NETP" Style="{StaticResource ParamAtCmd}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ComboBox Style="{StaticResource ParamCombo}" ItemsSource="{Binding NetpProtoOptions}"
+                                                  SelectedItem="{Binding SelectedNetpProto}" Width="70" IsEnabled="{Binding IsNotBusy}"/>
+                                        <ComboBox Style="{StaticResource ParamCombo}" ItemsSource="{Binding NetpCsOptions}"
+                                                  SelectedItem="{Binding SelectedNetpCs}" Width="80" Margin="6,0" IsEnabled="{Binding IsNotBusy}"/>
+                                        <TextBox Style="{StaticResource ParamInput}" Text="{Binding NetpPort}"
+                                                 Width="70" IsEnabled="{Binding IsNotBusy}" ToolTip="Port"/>
+                                        <TextBox Style="{StaticResource ParamInput}" Text="{Binding NetpIp}"
+                                                 Width="160" Margin="6,0,0,0" IsEnabled="{Binding IsNotBusy}"
+                                                 ToolTip="IP Address / Host Target"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                            Command="{Binding ReadNetpCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                    <Button Grid.Column="3" Content="Kirim" Style="{StaticResource ActionButton}"
+                                            Command="{Binding SendNetpCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                    <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                             Text="{Binding NetpResp}" ToolTip="{Binding NetpResp}"/>
+                                </Grid>
+
+                                <!-- Parameter Ekstra MQTT -->
+                                <Border Margin="200,8,0,0" Padding="10,8" Background="#E3F2FD"
+                                        CornerRadius="4" BorderBrush="#BBDEFB" BorderThickness="1"
+                                        Visibility="{Binding IsMqttMode, Converter={StaticResource BoolToVisConverter}}">
+                                    <StackPanel>
+                                        <TextBlock Text="⚙️ Parameter Ekstra MQTT" FontWeight="Bold"
+                                                   Foreground="#0277BD" Margin="0,0,0,6" FontSize="11"/>
+                                        <WrapPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="0,3,14,3">
+                                                <TextBlock Text="Client ID:" VerticalAlignment="Center"
+                                                           FontSize="11" Margin="0,0,4,0"/>
+                                                <TextBox Style="{StaticResource ParamInput}" Text="{Binding MqttClientId}"
+                                                         Width="120" IsEnabled="{Binding IsNotBusy}" FontSize="11"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="0,3,14,3">
+                                                <TextBlock Text="User:" VerticalAlignment="Center"
+                                                           FontSize="11" Margin="0,0,4,0"/>
+                                                <TextBox Style="{StaticResource ParamInput}" Text="{Binding MqttUser}"
+                                                         Width="100" IsEnabled="{Binding IsNotBusy}" FontSize="11"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="0,3,14,3">
+                                                <TextBlock Text="Password:" VerticalAlignment="Center"
+                                                           FontSize="11" Margin="0,0,4,0"/>
+                                                <TextBox Style="{StaticResource ParamInput}" Text="{Binding MqttPass}"
+                                                         Width="100" IsEnabled="{Binding IsNotBusy}" FontSize="11"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="0,3,14,3">
+                                                <TextBlock Text="Sub Topic:" VerticalAlignment="Center"
+                                                           FontSize="11" Margin="0,0,4,0"/>
+                                                <TextBox Style="{StaticResource ParamInput}" Text="{Binding MqttSubTopic}"
+                                                         Width="130" IsEnabled="{Binding IsNotBusy}" FontSize="11"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="0,3,14,3">
+                                                <TextBlock Text="Pub Topic:" VerticalAlignment="Center"
+                                                           FontSize="11" Margin="0,0,4,0"/>
+                                                <TextBox Style="{StaticResource ParamInput}" Text="{Binding MqttPubTopic}"
+                                                         Width="130" IsEnabled="{Binding IsNotBusy}" FontSize="11"/>
+                                            </StackPanel>
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- web GUI parameter (AT+WEBU) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#FFFFFF">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="web GUI parameter" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+WEBU" Style="{StaticResource ParamAtCmd}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBox Style="{StaticResource ParamInput}" Text="{Binding WebuUser}"
+                                             Width="150" IsEnabled="{Binding IsNotBusy}" ToolTip="User"/>
+                                    <TextBox Style="{StaticResource ParamInput}" Text="{Binding WebuPass}"
+                                             Width="150" Margin="6,0,0,0" IsEnabled="{Binding IsNotBusy}" ToolTip="Password"/>
+                                </StackPanel>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadWebuCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="Kirim" Style="{StaticResource ActionButton}"
+                                        Command="{Binding SendWebuCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding WebuResp}" ToolTip="{Binding WebuResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- heartbeat awal (AT+REGEN) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#F7F9FB">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="heartbeat awal" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+REGEN" Style="{StaticResource ParamAtCmd}"/>
+                                </StackPanel>
+                                <ComboBox Grid.Column="1" Style="{StaticResource ParamCombo}"
+                                          ItemsSource="{Binding RegenOptions}" SelectedItem="{Binding SelectedRegen}"
+                                          Width="150" HorizontalAlignment="Left" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadRegenCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="Kirim" Style="{StaticResource ActionButton}"
+                                        Command="{Binding SendRegenCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding RegenResp}" ToolTip="{Binding RegenResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- data heartbeat awal (AT+REGUSR) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#FFFFFF">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="data heartbeat awal" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+REGUSR" Style="{StaticResource ParamAtCmd}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <ComboBox Style="{StaticResource ParamCombo}" ItemsSource="{Binding RegusrTypeOptions}"
+                                              SelectedItem="{Binding SelectedRegusrType}" Width="80" IsEnabled="{Binding IsNotBusy}"/>
+                                    <TextBox Style="{StaticResource ParamInput}" Text="{Binding RegusrData}"
+                                             Width="220" Margin="6,0,0,0" IsEnabled="{Binding IsNotBusy}"/>
+                                </StackPanel>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadRegusrCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="Kirim" Style="{StaticResource ActionButton}"
+                                        Command="{Binding SendRegusrCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding RegusrResp}" ToolTip="{Binding RegusrResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- jumlah heartbeat awal (AT+REGSND) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#F7F9FB">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="jumlah heartbeat awal" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+REGSND" Style="{StaticResource ParamAtCmd}"/>
+                                </StackPanel>
+                                <ComboBox Grid.Column="1" Style="{StaticResource ParamCombo}"
+                                          ItemsSource="{Binding RegsndOptions}" SelectedItem="{Binding SelectedRegsnd}"
+                                          Width="150" HorizontalAlignment="Left" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadRegsndCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="Kirim" Style="{StaticResource ActionButton}"
+                                        Command="{Binding SendRegsndCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding RegsndResp}" ToolTip="{Binding RegsndResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- TCP timeout (AT+TCPTO) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#FFFFFF">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="TCP timeout (detik)" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+TCPTO" Style="{StaticResource ParamAtCmd}"/>
+                                </StackPanel>
+                                <TextBox Grid.Column="1" Style="{StaticResource ParamInput}"
+                                         Text="{Binding TcptoTime, UpdateSourceTrigger=PropertyChanged}"
+                                         Width="120" HorizontalAlignment="Left" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadTcptoCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="Kirim" Style="{StaticResource ActionButton}"
+                                        Command="{Binding SendTcptoCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding TcptoResp}" ToolTip="{Binding TcptoResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- heartbeat parameter (AT+NETHEARTCFG) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#F7F9FB">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="heartbeat parameter" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+NETHEARTCFG" Style="{StaticResource ParamAtCmd}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <ComboBox Style="{StaticResource ParamCombo}" ItemsSource="{Binding HeartSwitchOptions}"
+                                              SelectedItem="{Binding SelectedHeartSwitch}" Width="70" IsEnabled="{Binding IsNotBusy}"/>
+                                    <TextBox Style="{StaticResource ParamInput}" Text="{Binding HeartCycle}"
+                                             Width="70" Margin="6,0" IsEnabled="{Binding IsNotBusy}" ToolTip="Cycle"/>
+                                    <ComboBox Style="{StaticResource ParamCombo}" ItemsSource="{Binding HeartTypeOptions}"
+                                              SelectedItem="{Binding SelectedHeartType}" Width="70" IsEnabled="{Binding IsNotBusy}"/>
+                                    <TextBox Style="{StaticResource ParamInput}" Text="{Binding HeartPayload}"
+                                             Width="130" Margin="6,0,0,0" IsEnabled="{Binding IsNotBusy}" ToolTip="Payload"/>
+                                </StackPanel>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadNetheartCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="Kirim" Style="{StaticResource ActionButton}"
+                                        Command="{Binding SendNetheartCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding HeartResp}" ToolTip="{Binding HeartResp}"/>
+                            </Grid>
+                        </Border>
+
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- ===== PANEL 3: SOCKET B ===== -->
+                <GroupBox Header="3. Konfigurasi Sekunder (Socket B / SOCKB)" Foreground="DarkGreen"
+                          Padding="8" Margin="0,0,0,10">
+                    <StackPanel>
+
+                        <!-- Socket B Protokol (AT+SOCKB) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#FFFFFF">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="Socket B protokol" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+SOCKB" Foreground="#008000" FontSize="10" FontFamily="Consolas" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <ComboBox Style="{StaticResource ParamCombo}" ItemsSource="{Binding SockbProtoOptions}"
+                                              SelectedItem="{Binding SelectedSockbProto}" Width="75" IsEnabled="{Binding IsNotBusy}"/>
+                                    <TextBox Style="{StaticResource ParamInput}" Text="{Binding SockbPort}"
+                                             Width="70" Margin="6,0" IsEnabled="{Binding IsNotBusy}" ToolTip="Port Socket B"/>
+                                    <TextBox Style="{StaticResource ParamInput}" Text="{Binding SockbIp}"
+                                             Width="160" IsEnabled="{Binding IsNotBusy}" ToolTip="IP / Host Target Socket B"/>
+                                </StackPanel>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadSockbCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="Kirim" Style="{StaticResource ActionButton}"
+                                        Command="{Binding SendSockbCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding SockbResp}" ToolTip="{Binding SockbResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Saklar TCP Client Socket B (AT+TCPDISB) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#F7F9FB">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="Koneksi Socket B" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+TCPDISB" Foreground="#008000" FontSize="10" FontFamily="Consolas" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="Status:" VerticalAlignment="Center" Margin="0,0,5,0" FontSize="11"/>
+                                    <ComboBox Style="{StaticResource ParamCombo}" ItemsSource="{Binding TcpdisbOptions}"
+                                              SelectedItem="{Binding SelectedTcpdisbSta}" Width="70" IsEnabled="{Binding IsNotBusy}"/>
+                                    <TextBlock Text="Simpan Flash:" VerticalAlignment="Center"
+                                               Margin="14,0,5,0" FontSize="11"/>
+                                    <ComboBox Style="{StaticResource ParamCombo}" ItemsSource="{Binding TcpdisbOptOptions}"
+                                              SelectedItem="{Binding SelectedTcpdisbOpt}" Width="55" IsEnabled="{Binding IsNotBusy}"
+                                              ToolTip="0: Sementara, 1: Simpan ke Flash"/>
+                                </StackPanel>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadTcpdisbCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="Kirim" Style="{StaticResource ActionButton}"
+                                        Command="{Binding SendTcpdisbCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding TcpdisbResp}" ToolTip="{Binding TcpdisbResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Timeout TCP Socket B (AT+TCPTOB) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#FFFFFF">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="TCP Timeout Socket B" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+TCPTOB" Foreground="#008000" FontSize="10" FontFamily="Consolas" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <TextBox Grid.Column="1" Style="{StaticResource ParamInput}"
+                                         Text="{Binding TcptobTime, UpdateSourceTrigger=PropertyChanged}"
+                                         Width="120" HorizontalAlignment="Left" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadTcptobCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="Kirim" Style="{StaticResource ActionButton}"
+                                        Command="{Binding SendTcptobCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding TcptobResp}" ToolTip="{Binding TcptobResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Cek Status Link Socket B (AT+TCPLKB) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#F7F9FB">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="Status Link Socket B" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+TCPLKB" Foreground="#008000" FontSize="10" FontFamily="Consolas" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="[Read Only Link Status B]" Foreground="Gray"
+                                           VerticalAlignment="Center" FontSize="11" FontStyle="Italic" Margin="4,0"/>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadTcplkbCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="—" Style="{StaticResource ActionButton}" IsEnabled="False"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding TcplkbResp}" ToolTip="{Binding TcplkbResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Port Lokal UDP Socket A & B (AT+UDPLCPT) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#FFFFFF">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="Port Lokal UDP A/B" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+UDPLCPT" Foreground="#008000" FontSize="10" FontFamily="Consolas" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="Port A:" VerticalAlignment="Center" Margin="0,0,5,0" FontSize="11"/>
+                                    <TextBox Style="{StaticResource ParamInput}" Text="{Binding UdplcptPortA}"
+                                             Width="80" IsEnabled="{Binding IsNotBusy}"/>
+                                    <TextBlock Text="Port B:" VerticalAlignment="Center"
+                                               Margin="14,0,5,0" FontSize="11"/>
+                                    <TextBox Style="{StaticResource ParamInput}" Text="{Binding UdplcptPortB}"
+                                             Width="80" IsEnabled="{Binding IsNotBusy}"/>
+                                </StackPanel>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadUdplcptCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="Kirim" Style="{StaticResource ActionButton}"
+                                        Command="{Binding SendUdplcptCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding UdplcptResp}" ToolTip="{Binding UdplcptResp}"/>
+                            </Grid>
+                        </Border>
+
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- ===== PANEL 4: INFO SISTEM ===== -->
+                <GroupBox Header="4. Informasi &amp; Sistem Modul" Padding="8" Margin="0,0,0,10">
+                    <StackPanel>
+
+                        <!-- Target SSID STA (AT+WSSSID) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#FFFFFF">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="SSID Wi-Fi STA" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+WSSSID" Style="{StaticResource ParamAtCmd}"/>
+                                </StackPanel>
+                                <TextBox Grid.Column="1" Style="{StaticResource ParamInput}"
+                                         Text="{Binding WsssidSsid}" Width="240" HorizontalAlignment="Left"
+                                         IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadWsssidCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="Kirim" Style="{StaticResource ActionButton}"
+                                        Command="{Binding SendWsssidCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding WsssidResp}" ToolTip="{Binding WsssidResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- IP LAN modul (AT+LAN) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#F7F9FB">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="IP LAN modul" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+LAN" Style="{StaticResource ParamAtCmd}"/>
+                                </StackPanel>
+                                <TextBox Grid.Column="1" Style="{StaticResource ParamInput}"
+                                         Text="{Binding LanIp}" Width="220" HorizontalAlignment="Left"
+                                         IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadLanCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="Kirim" Style="{StaticResource ActionButton}"
+                                        Command="{Binding SendLanCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding LanResp}" ToolTip="{Binding LanResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- IP WAN (AT+WANN) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#FFFFFF">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="IP WAN / DHCP status" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+WANN" Style="{StaticResource ParamAtCmd}"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="[Read Only WAN IP]" Foreground="Gray"
+                                           VerticalAlignment="Center" FontSize="11" FontStyle="Italic" Margin="4,0"/>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadWannCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="—" Style="{StaticResource ActionButton}" IsEnabled="False"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding WannResp}" ToolTip="{Binding WannResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Serial Number (AT+SN) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#F7F9FB">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="Serial Number" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+SN" Style="{StaticResource ParamAtCmd}"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="[Read Only SN]" Foreground="Gray"
+                                           VerticalAlignment="Center" FontSize="11" FontStyle="Italic" Margin="4,0"/>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadSnCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="—" Style="{StaticResource ActionButton}" IsEnabled="False"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding SnResp}" ToolTip="{Binding SnResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- MAC Address STA (AT+WSMAC) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#FFFFFF">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="MAC Address STA" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+WSMAC" Style="{StaticResource ParamAtCmd}"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="[Read Only MAC]" Foreground="Gray"
+                                           VerticalAlignment="Center" FontSize="11" FontStyle="Italic" Margin="4,0"/>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadWsmacCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="—" Style="{StaticResource ActionButton}" IsEnabled="False"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding WsmacResp}" ToolTip="{Binding WsmacResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Wi-Fi saklar (AT+WIFI) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#F7F9FB">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="Wi-Fi saklar (on/off)" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+WIFI" Style="{StaticResource ParamAtCmd}"/>
+                                </StackPanel>
+                                <ComboBox Grid.Column="1" Style="{StaticResource ParamCombo}"
+                                          ItemsSource="{Binding WifiSwitchOptions}" SelectedItem="{Binding SelectedWifiSwitch}"
+                                          Width="120" HorizontalAlignment="Left" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadWifiCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="Kirim" Style="{StaticResource ActionButton}"
+                                        Command="{Binding SendWifiCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding WifiResp}" ToolTip="{Binding WifiResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Status koneksi Wi-Fi (AT+WSLK) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#FFFFFF">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="Status koneksi Wi-Fi" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+WSLK" Style="{StaticResource ParamAtCmd}"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="[Read Only Link Status]" Foreground="Gray"
+                                           VerticalAlignment="Center" FontSize="11" FontStyle="Italic" Margin="4,0"/>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadWslkCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="—" Style="{StaticResource ActionButton}" IsEnabled="False"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding WslkResp}" ToolTip="{Binding WslkResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- echo on/off (AT+EVENT) -->
+                        <Border Style="{StaticResource ParamRow}" Background="#F7F9FB">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="echo on/off" Style="{StaticResource ParamTitle}"/>
+                                    <TextBlock Text="AT+EVENT" Style="{StaticResource ParamAtCmd}"/>
+                                </StackPanel>
+                                <ComboBox Grid.Column="1" Style="{StaticResource ParamCombo}"
+                                          ItemsSource="{Binding EventOptions}" SelectedItem="{Binding SelectedEvent}"
+                                          Width="150" HorizontalAlignment="Left" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="2" Content="Baca" Style="{StaticResource ActionButton}"
+                                        Command="{Binding ReadEventCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <Button Grid.Column="3" Content="Kirim" Style="{StaticResource ActionButton}"
+                                        Command="{Binding SendEventCommand}" IsEnabled="{Binding IsNotBusy}"/>
+                                <TextBox Grid.Column="4" Style="{StaticResource RespBox}"
+                                         Text="{Binding EventResp}" ToolTip="{Binding EventResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- RESET PABRIK -->
+                        <Border Padding="10,8" CornerRadius="4" Margin="0,12,0,3"
+                                Background="#FFF5F5" BorderBrush="#FFCDD2" BorderThickness="1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="420"/>
+                                    <ColumnDefinition Width="160"/>
+                                    <ColumnDefinition Width="*" MinWidth="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Style="{StaticResource RowLabel}">
+                                    <TextBlock Text="RESET PABRIK" FontWeight="Bold" Foreground="#C62828" FontSize="12"/>
+                                    <TextBlock Text="AT+RELD" FontSize="10" Foreground="#C62828"
+                                               FontFamily="Consolas" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="Kata Sandi:" VerticalAlignment="Center"
+                                               Margin="0,0,6,0" FontSize="11"/>
+                                    <TextBox Style="{StaticResource ParamInput}" Width="150"
+                                             Text="{Binding ReldPassword, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                                <Button Grid.Column="2" Content="⚠ RESET PABRIK" Style="{StaticResource ActionButton}"
+                                        Command="{Binding SendReldCommand}" IsEnabled="{Binding IsNotBusy}"
+                                        Background="#FFEBEE" Foreground="#C62828" FontWeight="Bold"/>
+                                <TextBox Grid.Column="3" Style="{StaticResource RespBox}"
+                                         Text="{Binding ReldResp}" ToolTip="{Binding ReldResp}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- REBOOT -->
+                        <Button Content="🔄 RESTART MODUL (AT+Z)" Command="{Binding SendRebootCommand}"
+                                IsEnabled="{Binding IsNotBusy}" Height="34" Margin="0,14,0,0"
+                                Background="#FFF0F0" Foreground="#C62828" FontWeight="Bold"
+                                BorderBrush="#FFCDD2"/>
+
+                    </StackPanel>
+                </GroupBox>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ============ BARIS 2: LOG KONSOL ============ -->
+        <GroupBox Grid.Row="2" Header="Log Konsol" Padding="6" Margin="0,4,0,0">
+            <TextBox x:Name="TxtLogAdmin"
+                     Text="{Binding LogText, Mode=OneWay}"
+                     Background="#111111" Foreground="#00FF00"
+                     FontFamily="Consolas" FontSize="11"
+                     TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                     IsReadOnly="True" TextChanged="TxtLogAdmin_TextChanged"
+                     Padding="8"/>
+        </GroupBox>
+    </Grid>
+</UserControl>
