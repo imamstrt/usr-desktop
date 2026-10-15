@@ -113,7 +113,7 @@ public class UsrDeviceService : IUsrDeviceService
 
                 // 3. Retry Loop: Scan baudrate ulang & Masuk ke Mode AT
                 bool isReconnected = false;
-                int maxReconnectAttempts = 4; // Coba 3 kali
+                int maxReconnectAttempts = 3; // Coba 3 kali
 
                 for (int attempt = 1; attempt <= maxReconnectAttempts; attempt++)
                 {
