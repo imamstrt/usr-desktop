@@ -22,4 +22,7 @@ public interface IUsrDeviceService
     Task<string> CheckDhcpAsync(string comPortName, Action<string> log, CancellationToken ct = default);
     Task<Dictionary<string, string>> SendBatchAtCommandsAsync(string comPortName, List<string> commands, Action<string> log, CancellationToken ct = default);
     Task<string> SendSingleAtCommandAsync(string comPortName, string fullAtCmd, Action<string> log, CancellationToken ct = default);
+
+    Task<UartProfile?> QuickScanUartAsync(string portName, Action<string> log, CancellationToken ct);
+    Task<UartProfile?> DeepScanUartAsync(string portName, Action<string> log, IProgress<int>? progress, CancellationToken ct);
 }

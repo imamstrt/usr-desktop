@@ -21,11 +21,11 @@ public class UsrDeviceService : IUsrDeviceService
     /// Mengeksekusi sekuens konfigurasi otomatis (provisioning) untuk lini produksi.
     /// </summary>
     public async Task ProvisionDeviceAsync(
-        string comPortName,
-        string meterId,
-        ProvisioningConfig config,
-        Action<string> log,
-        CancellationToken ct = default)
+    string comPortName,
+    string meterId,
+    ProvisioningConfig config,
+    Action<string> log,
+    CancellationToken ct = default)
     {
         log("=== MULAI PENGUJIAN ===");
         log($"COM          : {comPortName}");
@@ -37,17 +37,21 @@ public class UsrDeviceService : IUsrDeviceService
             log("[WARN] Peringatan: Panjang Meter ID kurang dari 11 karakter!");
         }
 
-        int detectedBaud = await ScanBaudRateAsync(comPortName, log, ct);
-        if (detectedBaud == 0)
-            throw new Exception("Baudrate tidak ditemukan / Perangkat tidak merespon.");
+        // Menggunakan fungsi pemindaian cepat (Prioritas: 8-N-1 lalu 7-E-1)
+        var activeUart = await QuickScanUartAsync(comPortName, log, ct);
+        if (activeUart == null)
+        {
+            throw new Exception("Baudrate/UART tidak terdeteksi pada profil standar. Gunakan tombol 'Cari Parameter UART' untuk pemindaian menyeluruh.");
+        }
 
-        using var port = new SerialPort(comPortName, detectedBaud, Parity.None, 8, StopBits.One)
+        // Buka port menggunakan profil hasil deteksi yang spesifik (Baud, Parity, dll)
+        using var port = new SerialPort(comPortName, activeUart.BaudRate, activeUart.Parity, activeUart.DataBits, activeUart.StopBits)
         {
             ReadTimeout = 2000,
             WriteTimeout = 2000
         };
 
-        log($"[OPEN] Port {comPortName} @ {detectedBaud} baud");
+        log($"[OPEN] Port {comPortName} @ {activeUart.BaudRate} baud ({activeUart.DataBits}-{activeUart.Parity}-{activeUart.StopBits})");
         port.Open();
 
         try
@@ -60,8 +64,6 @@ public class UsrDeviceService : IUsrDeviceService
             // =========================================================================
             // PERCABANGAN SEKUENS BERDASARKAN TIPE MODUL
             // =========================================================================
-            // Bagian method ProvisionDeviceAsync di UsrDeviceService.cs:
-
             if (config.DeviceType == UsrDeviceType.DR162)
             {
                 // Sekuens Perintah AT USR-DR162
@@ -79,7 +81,6 @@ public class UsrDeviceService : IUsrDeviceService
                 await SendAtCheckedAsync(port, "AT+REGSND=FIRST", log, ct);
                 await SendAtCheckedAsync(port, $"AT+NETHEARTCFG=ON,900,HEX,{formattedMeterId}", log, ct);
                 await SendAtCheckedAsync(port, $"AT+UART={config.TargetBaudRate},{config.DataBits},{config.StopBits},{config.Parity},{ProductionConfig.FlowControl}", log, ct);
-                
             }
             else if (config.DeviceType == UsrDeviceType.DR404)
             {
@@ -119,12 +120,19 @@ public class UsrDeviceService : IUsrDeviceService
                 {
                     log($"[INFO] Percobaan koneksi kembali ke-{attempt} setelah RELD...");
 
-                    detectedBaud = await ScanBaudRateAsync(comPortName, log, ct);
-                    if (detectedBaud > 0)
+                    // Gunakan QuickScanUartAsync lagi untuk mendeteksi profil setelah restart (biasanya kembali ke 115200 8-N-1)
+                    var reconnectUart = await QuickScanUartAsync(comPortName, log, ct);
+
+                    if (reconnectUart != null)
                     {
-                        port.BaudRate = detectedBaud;
+                        // Terapkan hasil scan baru ke konfigurasi port
+                        port.BaudRate = reconnectUart.BaudRate;
+                        port.DataBits = reconnectUart.DataBits;
+                        port.Parity = reconnectUart.Parity;
+                        port.StopBits = reconnectUart.StopBits;
+
                         port.Open();
-                        log($"[OPEN] Port {comPortName} tersambung kembali @ {detectedBaud} baud");
+                        log($"[OPEN] Port {comPortName} tersambung kembali @ {reconnectUart.BaudRate} baud");
 
                         // Coba masuk AT mode
                         if (await EnterAtModeAsync(port, log, ct))
@@ -185,14 +193,13 @@ public class UsrDeviceService : IUsrDeviceService
             await SendAtCheckedAsync(port, "AT+Z", log, ct);
             log("=== SUCCESS ===");
 
-            // Reboot Modul
-            
         }
         finally
         {
             await ExitAtModeAsync(port, log, ct);
         }
     }
+
 
     /// <summary>
     /// Membaca MAC Address fisik dari modul DR404 via AT+WSMAC.
@@ -609,6 +616,108 @@ public class UsrDeviceService : IUsrDeviceService
 
         return false;
     }
+
+    public async Task<UartProfile?> QuickScanUartAsync(string portName, Action<string> log, CancellationToken ct)
+    {
+        int[] baudRates = { 115200, 9600, 19200, 57600, 38400, 4800, 2400, 1200, 300 };
+
+        // STEP 1: Standar USR / IoT (8-N-1)
+        log("[SCAN] Step 1: Menguji profil standar IoT (8-None-1)...");
+        foreach (int baud in baudRates)
+        {
+            if (await TestUartConnectionAsync(portName, baud, 8, Parity.None, StopBits.One, ct))
+            {
+                log($"[OK] Ditemukan di Step 1: {baud}, 8-None-1");
+                return new UartProfile(baud, 8, Parity.None, StopBits.One);
+            }
+        }
+
+        // STEP 2: Standar Meter / IEC (7-E-1)
+        log("[SCAN] Step 2: Menguji profil standar Meter (7-Even-1)...");
+        foreach (int baud in baudRates)
+        {
+            if (await TestUartConnectionAsync(portName, baud, 7, Parity.Even, StopBits.One, ct))
+            {
+                log($"[OK] Ditemukan di Step 2: {baud}, 7-Even-1");
+                return new UartProfile(baud, 7, Parity.Even, StopBits.One);
+            }
+        }
+
+        // Jika gagal di kedua step
+        log("[WARN] Modul tidak merespon di profil standar. Silakan gunakan tombol 'Cari Parameter UART'.");
+        return null;
+    }
+
+    private async Task<bool> TestUartConnectionAsync(string portName, int baud, int dataBits, Parity parity, StopBits stopBits, CancellationToken ct)
+    {
+        try
+        {
+            using var testPort = new SerialPort(portName, baud, parity, dataBits, stopBits)
+            {
+                ReadTimeout = 400,
+                WriteTimeout = 400
+            };
+            testPort.Open();
+            testPort.DiscardInBuffer();
+
+            byte[] bytes = Encoding.ASCII.GetBytes("+++");
+            testPort.Write(bytes, 0, bytes.Length);
+            await Task.Delay(350, ct);
+
+            string resp = testPort.ReadExisting();
+            if (resp.Contains("a") || resp.Contains("+ok")) return true;
+
+            byte[] atBytes = Encoding.ASCII.GetBytes("AT\r\n");
+            testPort.Write(atBytes, 0, atBytes.Length);
+            await Task.Delay(250, ct);
+
+            return testPort.ReadExisting().ToLower().Contains("+ok");
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+
+    public async Task<UartProfile?> DeepScanUartAsync(string portName, Action<string> log, IProgress<int>? progress, CancellationToken ct)
+    {
+        int[] bauds = { 115200, 9600, 19200, 57600, 38400, 4800, 2400, 1200, 300 };
+        int[] dataBitsList = { 8, 7 };
+        Parity[] parities = { Parity.None, Parity.Even, Parity.Odd };
+        StopBits[] stopBitsList = { StopBits.One, StopBits.Two };
+
+        int totalCombos = bauds.Length * dataBitsList.Length * parities.Length * stopBitsList.Length; // 108
+        int current = 0;
+
+        foreach (var parity in parities)
+        {
+            foreach (var dataBits in dataBitsList)
+            {
+                foreach (var stopBits in stopBitsList)
+                {
+                    foreach (var baud in bauds)
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        current++;
+                        progress?.Report((current * 100) / totalCombos);
+
+                        log($"[DEEP SCAN {current}/{totalCombos}] Menguji {baud} {dataBits}-{parity}-{stopBits}");
+
+                        if (await TestUartConnectionAsync(portName, baud, dataBits, parity, stopBits, ct))
+                        {
+                            log($"[FOUND] Parameter ditemukan: {baud}, DataBits={dataBits}, Parity={parity}, StopBits={stopBits}");
+                            return new UartProfile(baud, dataBits, parity, stopBits);
+                        }
+                    }
+                }
+            }
+        }
+
+        log("[FAIL] Semua 108 kombinasi gagal merespon.");
+        return null;
+    }
+
 
     private async Task SendAtCheckedAsync(SerialPort port, string cmd, Action<string> log, CancellationToken ct)
     {
